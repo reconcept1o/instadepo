@@ -1,0 +1,54 @@
+name: Deploy to Heroku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+    steps:
+      # 1. GitHub repo'sunu checkout edin
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # 2. Node.js versiyonunu ayarlayın
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      # 3. Backend (Node.js) için bağımlılıkları yükleyin
+      - name: Install dependencies (Backend)
+        working-directory: ./server
+        run: npm install
+
+      # 4. Heroku CLI'yi yükleyin ve .netrc dosyasını oluşturun
+      - name: Set up Heroku CLI and configure .netrc
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          echo "machine api.heroku.com login anyuser password $HEROKU_API_KEY" > ~/.netrc
+          echo "machine git.heroku.com login anyuser password $HEROKU_API_KEY" >> ~/.netrc
+          chmod 600 ~/.netrc
+          heroku auth:whoami
+
+      # 5. Heroku üzerinde frontend build işlemini çalıştırın
+      - name: Build Frontend on Heroku
+        run: |
+          heroku run "cd client && npm install && npm run build" --app kargodeposu
+
+      # 6. Frontend build dosyalarını backend'e kopyalayın
+      - name: Copy build to backend
+        run: |
+          cp -r ./client/build ./server
+
+      # 7. Backend'i Heroku'ya deploy edin
+      - name: Deploy Backend to Heroku
+        run: |
+          cd server
+          git remote add heroku https://git.heroku.com/kargodeposu.git
+          git push heroku main
