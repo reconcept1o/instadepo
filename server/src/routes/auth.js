@@ -28,7 +28,7 @@ router.get('/callback', async (req, res) => {
   try {
     // Exchange code for access token
     const tokenResponse = await axios.post(
-      `https://api.instagram.com/oauth/access_token`,
+      'https://api.instagram.com/oauth/access_token',
       null,
       {
         params: {
